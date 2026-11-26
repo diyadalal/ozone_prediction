@@ -1,0 +1,9 @@
+{
+  "params": {
+    "max_depth": 8,
+    "max_features": "sqrt",
+    "min_samples_leaf": 20
+  },
+  "thr_f1": 0.732169721976615,
+  "thr_r70": 0.39717876909525
+}

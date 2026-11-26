@@ -55,3 +55,31 @@ def time_series_cv(model, X, y, n_splits=5):
                      "roc_auc": roc_auc_score(y.iloc[te], p),
                      "pr_auc": average_precision_score(y.iloc[te], p)})
     return pd.DataFrame(rows)
+
+def threshold_for_recall(y_true, proba, target_recall=0.70):
+    """Highest threshold that still reaches target_recall on (validation) data.
+    Alternative to best_threshold for a warning system, where missing an ozone day
+    is worse than a false alarm. Returns (threshold, precision at that threshold).
+    """
+    prec, rec, thr = precision_recall_curve(y_true, proba)
+    ok = np.where(rec[:-1] >= target_recall)[0]
+    i = ok[-1]  # recall decreases as threshold rises -> last index meeting the target
+    return thr[i], prec[i]
+
+
+def tune_cv(make_model, param_grid, X, y, n_splits=5, verbose=True):
+    """Small grid search scored by time-series CV (mean PR-AUC).
+    make_model(**params) must return an unfitted model/pipeline.
+    Returns a DataFrame with one row per parameter combination, best first.
+    """
+    from sklearn.model_selection import ParameterGrid
+    rows = []
+    for params in ParameterGrid(param_grid):
+        cv = time_series_cv(make_model(**params), X, y, n_splits)
+        rows.append({**params, "cv_pr_auc": cv.pr_auc.mean(), "cv_pr_auc_std": cv.pr_auc.std(),
+                     "cv_roc_auc": cv.roc_auc.mean()})
+    res = pd.DataFrame(rows).sort_values("cv_pr_auc", ascending=False).reset_index(drop=True)
+    if verbose:
+        print(f"Tried {len(res)} settings. Best: {res.iloc[0].drop(['cv_pr_auc','cv_pr_auc_std','cv_roc_auc']).to_dict()} "
+              f"-> CV PR-AUC {res.cv_pr_auc.iloc[0]:.3f} ± {res.cv_pr_auc_std.iloc[0]:.3f}")
+    return res
