@@ -3,7 +3,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
-from sklearn.metrics import (average_precision_score, classification_report, confusion_matrix, f1_score, precision_recall_curve, roc_auc_score)
+from sklearn.metrics import (average_precision_score, classification_report, confusion_matrix, f1_score,
+                             precision_recall_curve, precision_score, recall_score, roc_auc_score)
 from sklearn.model_selection import TimeSeriesSplit
 
 
@@ -16,17 +17,21 @@ def best_threshold(y_true, proba):
 
 
 def evaluate(name, y_true, proba, threshold=0.5, verbose=True):
-    #ROC-AUC, PR-AUC and F1 at threshold. Returns a dict.
+    #ROC-AUC, PR-AUC, and precision/recall/F1 at threshold. Returns a dict.
+    pred = proba >= threshold
     res = {
         "model/split": name,
         "roc_auc": roc_auc_score(y_true, proba),
         "pr_auc": average_precision_score(y_true, proba),
-        "f1": f1_score(y_true, proba >= threshold),
+        "precision": precision_score(y_true, pred, zero_division=0),
+        "recall": recall_score(y_true, pred),
+        "f1": f1_score(y_true, pred),
         "threshold": threshold,
+        "baseline_pr_auc": float(np.mean(y_true)),  # PR-AUC of random guessing
     }
     if verbose:
-        print(f"{name}: ROC-AUC={res['roc_auc']:.3f}  PR-AUC={res['pr_auc']:.3f}  "
-              f"F1@{threshold:.2f}={res['f1']:.3f}")
+        print(f"{name}: ROC-AUC={res['roc_auc']:.3f}  PR-AUC={res['pr_auc']:.3f} (random={res['baseline_pr_auc']:.3f})  "
+              f"@{threshold:.2f}: P={res['precision']:.3f} R={res['recall']:.3f} F1={res['f1']:.3f}")
     return res
 
 
