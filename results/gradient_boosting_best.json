@@ -1,0 +1,11 @@
+{
+  "params": {
+    "l2_regularization": 1,
+    "learning_rate": 0.01,
+    "max_depth": 2,
+    "max_iter": 300,
+    "min_samples_leaf": 50
+  },
+  "thr_f1": 0.7980871078642083,
+  "thr_r70": 0.5267196865454011
+}
